@@ -12,9 +12,8 @@ def get_api_response(api_url):
         return None
 
 
-def write_json_list_to_excel(json_list, output_filename, named_range):
-    workbook = openpyxl.Workbook()
-    sheet = workbook.active
+def write_json_list_to_excel(workbook, json_list, sheet_title, named_range):
+    sheet = workbook.create_sheet(title=sheet_title)
 
     # Write headers in the worksheet
     headers = list(json_list[0].keys())
@@ -28,24 +27,40 @@ def write_json_list_to_excel(json_list, output_filename, named_range):
 
     # Create a named range
     named_range_ref = f'{sheet.title}!$A$1:${openpyxl.utils.get_column_letter(len(headers))}${len(json_list) + 1}'
-    # named_range_obj = DefinedName(name=named_range, localSheetId=0, formula=named_range_ref)
-    named_range_obj = DefinedName(name=named_range, localSheetId=0, attr_text=named_range_ref)
-    # workbook.defined_names.definedName.append(named_range_obj)
+    named_range_obj = DefinedName(name=named_range,  attr_text=named_range_ref)
     workbook.defined_names.add(named_range_obj)
 
-    # Save the Excel file
-    workbook.save(output_filename)
-    print(f"JSON data successfully written to {output_filename}")
-    print(f"Named range '{named_range}' created for the data.")
+    print(f"Named range '{named_range}' created for the data in '{sheet.title}' sheet.")
 
 
 if __name__ == "__main__":
-    api_url = "https://jsonplaceholder.typicode.com/posts"
-    json_response = get_api_response(api_url)
+    workbook = openpyxl.Workbook()
 
-    if json_response and isinstance(json_response, list):
-        output_filename = "output.xlsx"
-        named_range = input("Enter the name for the named range: ")
-        write_json_list_to_excel(json_response, output_filename, named_range)
-    else:
-        print("Invalid API response. The API should return a list of dictionaries.")
+    # Accept 5 API URLs
+    api_urls = []
+    for i in range(5):
+        api_url = input(f"Enter API URL {i + 1}: ")
+        api_urls.append(api_url)
+
+    names = []
+    for i in range(5):
+        name = input(f"Enter the range name for URL {i+1}: ")
+        names.append(name)
+
+    for i, api_url in enumerate(api_urls, start=1):
+        json_response = get_api_response(api_url)
+
+        if json_response and isinstance(json_response, list):
+            sheet_title = f"API_{i}"
+            named_range = f"{names[i-1]}"
+            if named_range is None:
+                named_range = f"API_{i}"
+            write_json_list_to_excel(workbook, json_response, sheet_title, named_range)
+        else:
+            print(f"Invalid API response for URL {api_url}. The API should return a list of dictionaries.")
+
+    # Save the Excel file
+    output_filename = "output.xlsx"
+    workbook.save(output_filename)
+    print(f"\nJSON data successfully written to {output_filename}")
+    print("Named ranges created for the data from multiple API calls.")
